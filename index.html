@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>کسرستان | ماجراجویی ریاضی</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800;900&display=swap">
+<style>
+/* متغیرهای رنگی پایه و تم‌های مراحل */
+:root {
+  --bg: #f0fdf4; /* رنگ پایه */
+  --fg: #1e293b; 
+  --muted: #64748b; 
+  --surface: #ffffff; 
+  --line: #cbd5e1;
+  --accent: #8b5cf6; 
+  --accent-fg: #ffffff;
+  
+  --c1: #f59e0b; /* طلایی */
+  --c2: #10b981; /* سبز */
+  --c3: #ec4899; /* صورتی */
+  --c4: #0ea5e9; /* آبی */
+  
+  --cell-empty: #f1f5f9; 
+  --cell-line: #94a3b8;
+  
+  --good: #15803d; --good-bg: #dcfce7; 
+  --bad: #b4430c; --bad-bg: #ffedd5;
+  
+  --bubble: #fffbeb; --bubble-edge: #fcd34d; 
+  --face: #334155; --mascot: #fbbf24; --slice: #fef08a; --flame: #ef4444;
+  --font: 'Vazirmatn', Tahoma, sans-serif;
+}
+
+/* تم مرحله ۱: دشت پیتزا */
+body[data-chapter="0"] { --bg: #fff7ed; --accent: #ea580c; --surface: #ffffff; --cell-empty: #ffedd5; --cell-line: #fdba74; }
+body[data-chapter="0"] .card { border-color: #fdba74; box-shadow: 0 10px 30px rgba(234, 88, 12, 0.1); }
+
+/* تم مرحله ۲: باغ شربت */
+body[data-chapter="1"] { --bg: #f0fdfa; --accent: #0d9488; --surface: #ffffff; --cell-empty: #ccfbf1; --cell-line: #5eead4; }
+body[data-chapter="1"] .card { border-color: #5eead4; box-shadow: 0 10px 30px rgba(13, 148, 136, 0.1); }
+
+/* تم مرحله ۳: قلعه نوارها */
+body[data-chapter="2"] { --bg: #f5f3ff; --accent: #7c3aed; --surface: #ffffff; --cell-empty: #ede9fe; --cell-line: #c4b5fd; }
+body[data-chapter="2"] .card { border-color: #c4b5fd; box-shadow: 0 10px 30px rgba(124, 58, 237, 0.1); }
+
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 0;
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font); font-size: 16px; line-height: 1.75; direction: rtl;
+  padding-block: 15px 30px; padding-inline: max(15px, env(safe-area-inset-left, 0px));
+  min-height: 100vh;
+  transition: background 0.5s ease;
+}
+
+.wrap { max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
+
+/* هدر و آمار */
+.top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; background: rgba(255,255,255,0.7); padding: 10px 20px; border-radius: 20px; backdrop-filter: blur(10px); box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+.brand { font-weight: 900; font-size: 1.6rem; color: var(--accent); text-shadow: 1px 1px 0px rgba(0,0,0,0.1); }
+.right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.stats { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill { background: var(--surface); border: 2px solid var(--accent); border-radius: 999px; padding: 4px 12px; font-size: 1rem; display: inline-flex; align-items: center; gap: 5px; font-weight: 800; color: var(--accent); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.ic { width: 1.2em; height: 1.2em; flex: none; }
+.snd { font: inherit; font-size: 0.9rem; font-weight: bold; background: var(--surface); color: var(--muted); border: 2px solid var(--line); border-radius: 999px; padding: 4px 12px; cursor: pointer; transition: all 0.2s; }
+.snd:hover { border-color: var(--accent); color: var(--accent); }
+
+/* نوار مسیر پیشرفت */
+.path { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
+.node { width: 2.2rem; height: 2.2rem; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.95rem; font-weight: 900; background: var(--surface); border: 2px dashed var(--cell-line); color: var(--muted); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.node.ok { background: var(--c2); border: 2px solid var(--c2); color: #fff; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
+.node.half { background: var(--c1); border: 2px solid var(--c1); color: #fff; }
+.node.miss { background: var(--surface); border: 2px solid var(--bad); color: var(--bad); }
+.node.now { border: 3px solid var(--accent); color: var(--accent); background: var(--surface); transform: scale(1.2); box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
+.gate { width: 0.6rem; height: 0.6rem; background: var(--accent); border-radius: 50%; margin-inline: 4px; opacity: 0.5; }
+
+/* راهنما و دیالوگ */
+.guide { display: flex; align-items: center; gap: 15px; margin-top: 10px; }
+.mas { flex: none; width: 90px; height: 90px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+.mas svg { width: 100%; height: 100%; display: block; }
+.mas.hop svg { animation: hop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 2; }
+@keyframes hop { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-15px) scale(1.05) rotate(-5deg)} }
+.bubble { flex: 1; background: var(--bubble); border: 3px solid var(--bubble-edge); border-radius: 20px; padding: 12px 18px; position: relative; font-size: 1.05rem; font-weight: 600; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+.bubble::after { content: ""; position: absolute; right: -15px; top: 50%; transform: translateY(-50%); border: 8px solid transparent; border-left-color: var(--bubble-edge); }
+
+/* کارت اصلی بازی */
+.card { background: var(--surface); border: 3px solid var(--line); border-radius: 24px; padding: 25px; display: flex; flex-direction: column; gap: 18px; position: relative; overflow: hidden; transition: all 0.3s; }
+.qhead { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 0.95rem; }
+.qhead .chap { font-weight: 900; color: var(--accent); background: rgba(139, 92, 246, 0.1); padding: 4px 12px; border-radius: 20px; }
+.qhead .kind { background: var(--cell-empty); font-weight: bold; border-radius: 20px; padding: 4px 12px; border: 1px dashed var(--cell-line); }
+
+h1 { font-size: 1.8rem; font-weight: 900; text-align: center; color: var(--accent); }
+h2 { font-size: 1.25rem; font-weight: 800; line-height: 1.6; color: var(--fg); text-align: center; }
+p { margin: 0; font-size: 1.1rem; }
+
+/* فرمت‌های ریاضی */
+.frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1.15; margin-inline: 0.2em; font-weight: 900; direction: ltr; color: var(--accent); }
+.frac .n { border-bottom: 3px solid currentColor; padding: 0 0.3em 0.1em; }
+.frac .d { padding: 0.1em 0.3em 0; }
+.math { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 0.4em; direction: ltr; font-weight: 900; }
+.mix { display: inline-flex; align-items: center; gap: 0.2em; direction: ltr; }
+.op { color: var(--muted); font-weight: 800; }
+.eq { font-size: 2.5rem; display: flex; justify-content: center; padding: 10px 0; background: rgba(255,255,255,0.5); border-radius: 15px; margin: 10px 0; }
+.frac .n input { font: inherit; font-weight: 900; font-size: 1.8rem; width: 4.5rem; text-align: center; border: 3px solid var(--accent); border-radius: 12px; padding: 4px; margin-bottom: 4px; color: var(--accent); direction: ltr; outline: none; transition: all 0.2s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+.frac .n input:focus { transform: scale(1.05); box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.2); }
+
+/* نوارها (رنگ‌آمیزی) */
+.bars { display: flex; flex-wrap: wrap; gap: 12px 18px; justify-content: center; direction: rtl; background: var(--cell-empty); padding: 15px; border-radius: 15px; border: 2px dashed var(--cell-line); }
+.bar { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; width: 8.5rem; padding: 4px; border-radius: 10px; background: var(--surface); box-shadow: 0 2px 5px rgba(0,0,0,0.05); direction: rtl; border: 2px solid var(--line); }
+.bar.paint { width: 10rem; }
+.bar.c0{--cc:var(--c1)}.bar.c1{--cc:var(--c2)}.bar.c2{--cc:var(--c3)}.bar.c3{--cc:var(--c4)}
+.bar i, .bar .cell { display: block; height: 2rem; border-radius: 6px; background: var(--cell-empty); border: 2px solid var(--cell-line); padding: 0; margin: 0; transition: all 0.2s; }
+.bar .cell { cursor: pointer; height: 2.4rem; }
+.bar .cell:hover { background: rgba(0,0,0,0.05); transform: translateY(-2px); }
+.bar i.on, .bar .cell.on { background: var(--cc); border-color: var(--cc); box-shadow: inset 0 2px 4px rgba(255,255,255,0.3); }
+.bar i.on { animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes pop { 0% {transform: scale(0.2); opacity: 0;} 80% {transform: scale(1.1); opacity: 1;} 100% {transform: scale(1);} }
+.bar.badbar { outline: 4px solid var(--bad); outline-offset: 2px; animation: shake 0.4s; }
+.caption { text-align: center; font-size: 1rem; font-weight: bold; color: var(--muted); margin-top: 5px; }
+
+/* گزینه‌ها و دکمه‌ها */
+.opts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.opt { font: inherit; font-size: 1.6rem; color: var(--fg); background: var(--surface); border: 3px solid var(--line); border-radius: 16px; padding: 10px; cursor: pointer; min-height: 5rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+.opt:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-4px) scale(1.02); box-shadow: 0 8px 15px rgba(0,0,0,0.08); }
+.opt:active:not(:disabled) { transform: translateY(0) scale(0.98); }
+.opt:disabled { cursor: default; opacity: 0.8; }
+.opt.right { border-color: var(--good); background: var(--good-bg); color: var(--good); transform: scale(1.05); z-index: 2; box-shadow: 0 10px 20px rgba(21, 128, 61, 0.2); }
+.opt.wrong { border-color: var(--bad); background: var(--bad-bg); color: var(--bad); animation: shake 0.4s ease; }
+
+.btn { font: inherit; font-weight: 900; border: 0; border-radius: 16px; padding: 12px 28px; cursor: pointer; background: var(--accent); color: var(--accent-fg); font-size: 1.15rem; transition: all 0.2s; box-shadow: 0 6px 0 rgba(0,0,0,0.15); }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 8px 0 rgba(0,0,0,0.15); filter: brightness(1.1); }
+.btn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.15); }
+.btn.ghost { background: transparent; color: var(--accent); border: 3px solid var(--accent); box-shadow: none; }
+.btn.ghost:hover { background: rgba(139, 92, 246, 0.1); transform: translateY(-2px); }
+.btn:disabled { opacity: 0.5; cursor: default; transform: none; box-shadow: none; }
+
+.row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+.hint, .fb { border-radius: 16px; padding: 15px 20px; font-size: 1.1rem; line-height: 1.8; animation: slideUp 0.3s ease; }
+@keyframes slideUp { from {opacity: 0; transform: translateY(10px);} to {opacity: 1; transform: translateY(0);} }
+.hint { background: var(--bubble); border: 2px dashed var(--bubble-edge); }
+.hint .math, .fb .math { display: flex; justify-content: center; font-size: 1.5rem; margin-block: 10px; background: rgba(255,255,255,0.5); padding: 5px; border-radius: 10px; }
+.fb.ok { background: var(--good-bg); color: var(--good); border: 2px solid var(--good); }
+.fb.no { background: var(--bad-bg); color: var(--bad); border: 2px solid var(--bad); }
+.fb .why { color: var(--fg); display: block; margin-top: 8px; font-weight: 600; }
+.live { text-align: center; font-size: 1.1rem; font-weight: bold; color: var(--accent); background: var(--cell-empty); padding: 8px; border-radius: 12px; }
+
+/* صفحه پایان و شروع */
+.big { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.big .mas { width: 140px; height: 140px; }
+.stars { font-size: 3.5rem; text-align: center; letter-spacing: 0.1em; color: var(--c1); line-height: 1.2; text-shadow: 0 4px 10px rgba(245, 158, 11, 0.3); }
+.badges { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 15px 0; }
+.badge { background: linear-gradient(135deg, var(--c1), #f59e0b); color: #fff; border-radius: 999px; padding: 6px 16px; font-size: 1rem; font-weight: 800; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3); animation: pop 0.5s; }
+.rules { margin: 15px 0; padding-inline-start: 1.5em; display: flex; flex-direction: column; gap: 8px; font-size: 1.1rem; font-weight: 600; background: var(--bubble); padding: 15px 30px; border-radius: 15px; }
+.nmrow { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; margin: 15px 0; background: var(--cell-empty); padding: 15px; border-radius: 15px; }
+.nmrow label { font-weight: 900; font-size: 1.2rem; color: var(--accent); }
+.nm { font: inherit; font-size: 1.2rem; font-weight: bold; border: 3px solid var(--accent); border-radius: 12px; padding: 8px 16px; background: var(--surface); color: var(--fg); width: 15rem; max-width: 100%; text-align: center; outline: none; transition: 0.2s; }
+.nm:focus { box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.2); }
+.credit { text-align: center; font-size: 0.9rem; font-weight: bold; color: var(--muted); margin-top: 20px; background: rgba(255,255,255,0.5); padding: 10px; border-radius: 15px; }
+.credit b { color: var(--accent); }
+#fx { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 50; }
+.cf { position: absolute; width: 12px; height: 12px; border-radius: 50%; }
+
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(5px)} }
+@media (max-width: 480px) { .eq { font-size: 1.8rem; } .bar { width: 7rem; } .bar.paint { width: 8.5rem; } .mas { width: 75px; height: 75px; } .opts { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body data-chapter="0">
+
+<div class="wrap" lang="fa" dir="rtl">
+  <header class="top">
+    <div class="brand">کسرستان 🍕</div>
+    <div class="right">
+      <div class="stats" id="stats" hidden></div>
+      <button class="snd" id="snd" type="button" aria-pressed="true">صدا: روشن 🔊</button>
+    </div>
+  </header>
+  <div class="path" id="path-container"></div>
+  <div id="app"></div>
+  <div class="credit">طراح: <b>مهدی نارویی</b> · ریاضی پایه چهارم، ضرب عدد در کسر</div>
+</div>
+<div id="fx" aria-hidden="true"></div>
+
+<script>
+// تنظیمات بازی
+var TOTAL = 10;
+var KINDS = ['choice','paint','word','choice','input','word','input','choice','word','input'];
+var KIND_LABEL = {choice:'انتخاب جواب 🎯', paint:'رنگ‌آمیزی 🎨', word:'مسئله 📝', input:'جای خالی ✍️'};
+var CH = [{name:'دشت پیتزا 🍕'},{name:'باغ شربت 🍹'},{name:'قلعه نوارها 🏰'}];
+var app = document.getElementById('app');
+var st = null, userName = '', soundOn = true, ac = null;
+
+// توابع کمکی
+function fa(s){ return String(s).replace(/\d/g, function(d){ return '۰۱۲۳۴۵۶۷۸۹'[d]; }); }
+function en(s){ return String(s).replace(/[۰-۹]/g, function(d){ return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); }).trim(); }
+function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function rnd(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+function pick(a){ return a[rnd(0,a.length-1)]; }
+function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=rnd(0,i), t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+function chapterOf(i){ return i<3 ? 0 : (i<6 ? 1 : 2); }
+function store(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){} return null; }
+
+// رندر ریاضی
+function frac(a,b){ return '<span class="frac"><span class="n">'+fa(a)+'</span><span class="d">'+fa(b)+'</span></span>'; }
+function op(s){ return '<span class="op">'+s+'</span>'; }
+function M(inner){ return '<span class="math" dir="ltr">'+inner+'</span>'; }
+function mixed(num,den){
+  if(num%den===0) return fa(num/den);
+  if(num>den) return '<span class="mix" dir="ltr"><span>'+fa(Math.floor(num/den))+'</span>'+frac(num%den,den)+'</span>';
+  return frac(num,den);
+}
+function repeatedAdd(q){ var p=[]; for(var i=0;i<q.n;i++) p.push(frac(q.a,q.b)); return p.join(op('+')); }
+function explain(q){
+  var s = fa(q.n)+op('×')+frac(q.a,q.b)+op('=')+repeatedAdd(q)+op('=')+frac(q.ans.num,q.ans.den);
+  if(q.ans.num>=q.ans.den) s += op('=')+mixed(q.ans.num,q.ans.den);
+  return M(s);
+}
+
+// کاراکتر (کسری)
+function mascot(mood){
+  var eyes, mouth;
+  if(mood==='cheer'){
+    eyes='<path d="M31 62 Q36 55 41 62 M57 62 Q62 55 67 62" fill="none" stroke="var(--face)" stroke-width="3.5" stroke-linecap="round"/>';
+    mouth='<path d="M38 72 Q50 95 62 72 Z" fill="var(--flame)" stroke="var(--face)" stroke-width="2"/>';
+  } else if(mood==='sad'){
+    eyes='<circle cx="36" cy="62" r="4" fill="var(--face)"/><circle cx="62" cy="62" r="4" fill="var(--face)"/>';
+    mouth='<path d="M41 82 Q50 73 59 82" fill="none" stroke="var(--face)" stroke-width="3.5" stroke-linecap="round"/>';
+  } else {
+    eyes='<circle cx="36" cy="62" r="4" fill="var(--face)"/><circle cx="62" cy="62" r="4" fill="var(--face)"/>';
+    mouth='<path d="M41 74 Q50 85 59 74" fill="none" stroke="var(--face)" stroke-width="3.5" stroke-linecap="round"/>';
+  }
+  return '<svg viewBox="0 0 100 100" role="img">'+
+    '<path d="M55 50 L55 14 A36 36 0 0 1 91 50 Z" fill="var(--slice)" stroke="var(--face)" stroke-width="3.5" stroke-linejoin="round"/>'+
+    '<path d="M50 55 L50 19 A36 36 0 1 0 86 55 Z" fill="var(--mascot)" stroke="var(--face)" stroke-width="3.5" stroke-linejoin="round"/>'+
+    eyes+mouth+'</svg>';
+}
+function setMascot(mood){
+  var m=document.getElementById('mas'); if(!m) return;
+  m.innerHTML=mascot(mood); m.classList.remove('hop');
+  if(mood==='cheer'){ void m.offsetWidth; m.classList.add('hop'); }
+}
+function say(html, mood){
+  var b=document.getElementById('say'); if(b) b.innerHTML=html;
+  if(mood) setMascot(mood);
+}
+
+// صدا و افکت‌ها
+function sfx(kind){
+  if(!soundOn) return;
+  try{
+    ac = ac || new (window.AudioContext||window.webkitAudioContext)();
+    var seqs={
+        good:[[659,0.1],[880,0.15],[1046,0.2]], 
+        win:[[523,0.1],[659,0.1],[784,0.1],[1046,0.3]], 
+        retry:[[330,0.2]], 
+        bad:[[247,0.15],[196,0.25]]
+    };
+    var notes=seqs[kind]||[]; var t=ac.currentTime;
+    notes.forEach(function(n,i){
+      var o=ac.createOscillator(), g=ac.createGain();
+      o.type=(kind==='bad'||kind==='retry')?'sawtooth':'triangle'; 
+      o.frequency.value=n[0];
+      g.gain.setValueAtTime(0.0001,t);
+      g.gain.exponentialRampToValueAtTime(0.15,t+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+n[1]);
+      o.connect(g); g.connect(ac.destination);
+      o.start(t); o.stop(t+n[1]);
+      t+=n[1];
+    });
+  }catch(e){}
+}
+function burst(){
+  var layer=document.getElementById('fx'); if(!layer||!layer.animate) return;
+  var cols=['#f59e0b','#10b981','#ec4899','#0ea5e9','#8b5cf6', '#ef4444'];
+  for(var k=0;k<40;k++){
+    var s=document.createElement('span'); s.className='cf'; 
+    s.style.background=cols[rnd(0,cols.length-1)];
+    if(rnd(0,1)) { s.style.borderRadius = "0"; s.style.width="8px"; s.style.height="15px"; }
+    s.style.left=(50+(Math.random()-0.5)*30)+'%'; s.style.top='40%';
+    layer.appendChild(s);
+    var dx=(Math.random()-0.5)*600, dy=-(Math.random()*300+100), rot=Math.random()*1080;
+    var an=s.animate([
+      {transform:'translate(0,0) rotate(0deg) scale(1)',opacity:1},
+      {transform:'translate('+dx+'px,'+(dy+500)+'px) rotate('+rot+'deg) scale(0)',opacity:0}
+    ],{duration:1200+Math.random()*800,easing:'cubic-bezier(0.25, 0.46, 0.45, 0.94)'});
+    an.onfinish=(function(el){ return function(){ el.remove(); }; })(s);
+  }
+}
+function shake(){
+  var c=document.querySelector('.card'); if(!c) return;
+  c.style.animation = 'none'; void c.offsetWidth; c.style.animation = 'shake 0.4s';
+}
+
+// ساخت سؤال
+function makeQ(i){
+  var c=chapterOf(i), bs, nr;
+  if(c===0){ bs=[2,3,4,5]; nr=[2,4]; }
+  else if(c===1){ bs=[3,4,5,6,8]; nr=[2,6]; }
+  else { bs=[5,6,7,8,10]; nr=[3,9]; }
+  var b=pick(bs), a=rnd(1,b-1), n=rnd(nr[0],nr[1]);
+  var ans={num:n*a,den:b};
+  
+  // مسائل شخصی‌سازی شده
+  var nName = userName ? userName : 'علی';
+  var words = [
+    function(n,f){ return nName + ' هر روز '+f+' لیتر آب می‌نوشد. در '+fa(n)+' روز چند لیتر آب می‌نوشد؟'; },
+    function(n,f){ return 'طول هر تکه پیتزا '+f+' متر است! '+fa(n)+' تکه پیتزا روی هم چند متر می‌شود؟'; },
+    function(n,f){ return nName + ' هر روز '+f+' ساعت تمرین ریاضی می‌کند. در '+fa(n)+' روز چقدر تمرین کرده است؟'; },
+    function(n,f){ return 'در هر لیوان '+f+' لیتر شربت جا می‌گیرد. در '+fa(n)+' لیوان چقدر شربت جا می‌گیرد؟'; },
+    function(n,f){ return 'هر کیک '+f+' کیلوگرم آرد لازم دارد. '+nName+' برای پختن '+fa(n)+' کیک چقدر آرد نیاز دارد؟'; }
+  ];
+  
+  var q={n:n,a:a,b:b,kind:KINDS[i],ans:ans,word:pick(words)};
+  if(q.kind==='choice' || q.kind==='word'){
+    var cands=[{num:n*a,den:n*b},{num:n+a,den:b},{num:a,den:n*b},{num:n*a,den:b+n},{num:n*a,den:n+b},{num:a+n,den:b+n},{num:n*a+1,den:b},{num:n*a-1,den:b}];
+    var seen={}; seen[ans.num+'/'+ans.den]=1; var ds=[];
+    shuffle(cands).forEach(function(x){
+      var key=x.num+'/'+x.den;
+      if(x.num<1 || seen[key]) return;
+      if(x.num*ans.den===ans.num*x.den) return;
+      seen[key]=1; ds.push(x);
+    });
+    q.opts=shuffle(ds.slice(0,3).concat([ans]));
+  }
+  return q;
+}
+
+// رسم نوارها
+function bars(q, paint){
+  var n=q.n,a=q.a,b=q.b;
+  var h = paint ? '<div class="bars">' : '<div class="bars">';
+  for(var i=0;i<n;i++){
+    h+='<div class="bar c'+(i%4)+(paint?' paint':'')+'">';
+    for(var j=0;j<b;j++){
+      if(paint) h+='<button type="button" class="cell"></button>';
+      else h+='<i class="'+(j<a?'on':'')+'" style="animation-delay:'+(i*0.1+j*0.03).toFixed(2)+'s"></i>';
+    }
+    h+='</div>';
+  }
+  h+='</div>';
+  if(!paint) h+='<div class="caption">'+fa(n)+' نوار؛ در هر نوار '+frac(a,b)+' رنگی است</div>';
+  return h;
+}
+
+// بروزرسانی UI
+function updateStats(){
+  var s=document.getElementById('stats');
+  if(!st){ s.hidden=true; return; }
+  s.hidden=false;
+  var star='<span style="font-size:1.2rem">⭐</span>';
+  var flame= st.streak>=3 ? '<span style="font-size:1.2rem; animation:pop 0.5s infinite alternate">🔥</span>' : '<span style="font-size:1.2rem">🔥</span>';
+  s.innerHTML='<span class="pill" title="امتیاز کل">'+star+'<b>'+fa(st.score)+'</b></span>'+
+              '<span class="pill" title="روند درستی">'+flame+'<b>'+fa(st.streak)+'</b></span>';
+}
+function pathHtml(){
+  if(!st) return '';
+  var h='<div class="path">';
+  for(var i=0;i<TOTAL;i++){
+    var r=st.results[i], cls='';
+    if(r==='ok') cls='ok'; else if(r==='half') cls='half'; else if(r==='miss') cls='miss'; else if(i===st.i) cls='now';
+    h+='<span class="node '+cls+'">'+fa(i+1)+'</span>';
+    if(i===2||i===5) h+='<span class="gate"></span>';
+  }
+  return h+'</div>';
+}
+function refreshPath(){ var p=document.getElementById('path-container'); if(p) p.innerHTML=pathHtml(); }
+
+// شروع بازی
+function intro(){
+  st=null; updateStats(); document.getElementById('path-container').innerHTML='';
+  document.body.setAttribute('data-chapter', '0');
+  var saved=store('ks-name'); if(saved && !userName) userName=saved;
+  var best=store('ks-best');
+  app.innerHTML=
+    '<div class="card">'+
+      '<div class="big"><div class="mas" id="mas">'+mascot('cheer')+'</div></div>'+
+      '<h1>سلام! به کسرستان خوش‌آمدی</h1>'+
+      '<p style="text-align:center; font-weight:bold;">سفر ما از ۳ منطقه می‌گذرد: پیتزا، شربت و نوارها.</p>'+
+      '<div class="eq">'+M(fa(3)+op('×')+frac(2,5)+op('=')+frac(6,5))+'</div>'+
+      '<div class="rules">'+
+        '<span>🎯 ۱۰ سؤال داری. هر جواب درست ۱۰ امتیاز.</span>'+
+        '<span>💡 اگر اشتباه کنی، با راهنما ۵ امتیاز می‌گیری.</span>'+
+        '<span>🔥 ۳ جواب درست پشت‌سرهم = ۵ امتیاز جایزه!</span>'+
+      '</div>'+
+      '<div class="nmrow"><label>فرمانده، اسمت چیه؟</label><input class="nm" id="nm" type="text" maxlength="20" placeholder="مثلاً علی..." autocomplete="off" value="'+esc(userName)+'"></div>'+
+      (best ? '<p class="caption">بیشترین امتیاز تو تا حالا: <b>'+fa(best)+'</b></p>' : '')+
+      '<div class="row"><button class="btn" id="go">🚀 شروع ماجرا</button></div>'+
+    '</div>';
+  document.getElementById('go').onclick=startGame;
+  document.getElementById('nm').addEventListener('keydown',function(e){ if(e.key==='Enter') startGame(); });
+}
+
+function startGame(){
+  var nm=document.getElementById('nm');
+  if(nm && nm.value.trim()){ userName=nm.value.trim(); store('ks-name',userName); }
+  st={i:0,score:0,streak:0,best:0,right:0,firstTry:0,results:[],tries:0,answered:false,q:makeQ(0)};
+  render();
+}
+
+function nameTag(){ return userName ? ' <b>'+esc(userName)+'</b>' : ''; }
+
+function render(){
+  var q=st.q, ch=chapterOf(st.i);
+  document.body.setAttribute('data-chapter', ch);
+  updateStats(); refreshPath();
+  
+  var h='<div class="guide"><div class="mas" id="mas">'+mascot('happy')+'</div><div class="bubble" id="say"></div></div>';
+  h+='<div class="card">';
+  h+='<div class="qhead"><span class="chap">'+CH[ch].name+'</span><span class="kind">'+KIND_LABEL[q.kind]+'</span></div>';
+  
+  if(q.kind==='word') h+='<h2>'+q.word(q.n,frac(q.a,q.b))+'</h2>';
+  else if(q.kind==='paint') h+='<h2>در هر نوار '+frac(q.a,q.b)+' را رنگ کن.</h2>';
+  else if(q.kind==='input') h+='<h2>جای خالی را با عدد مناسب پر کن.</h2>';
+  else h+='<h2>حاصل ضرب زیر کدام است؟</h2>';
+
+  h+='<div class="eq">'+M(fa(q.n)+op('×')+frac(q.a,q.b)+op('=')+
+      (q.kind==='input'
+        ? '<span class="frac"><span class="n"><input id="inp" type="text" inputmode="numeric" autocomplete="off"></span><span class="d">'+fa(q.b)+'</span></span>'
+        : '<span>؟</span>'))+'</div>';
+
+  h+=bars(q, q.kind==='paint');
+  if(q.kind==='paint') h+='<div class="live" id="live">تا الان ۰ خانه را رنگ کرده‌ای.</div>';
+
+  if(q.kind==='input' || q.kind==='paint'){
+    h+='<div class="row"><button class="btn" id="chk">✔️ بررسی جواب</button></div>';
+  } else {
+    h+='<div class="opts">';
+    q.opts.forEach(function(o,k){ h+='<button type="button" class="opt" data-k="'+k+'">'+frac(o.num,o.den)+'</button>'; });
+    h+='</div>';
+  }
+  h+='<div id="hintBox" class="hint" hidden>'+
+       '💡 <b>راهنما:</b> ضرب یعنی جمع تکراری. صورت را در عدد ضرب کن و مخرج را همان بگذار:'+
+       '<div>'+M(fa(q.n)+op('×')+frac(q.a,q.b)+op('=')+frac(fa(q.n)+' × '+fa(q.a),q.b))+'</div>'+
+     '</div>';
+  h+='<div id="fbBox"></div>';
+  h+='<div class="row"><button class="btn ghost" id="hintBtn" type="button">💡 راهنما</button><button class="btn" id="next" type="button" hidden>'+(st.i===TOTAL-1?'🏆 دیدن نتیجه':'➡️ سؤال بعد')+'</button></div>';
+  h+='</div>';
+  app.innerHTML=h;
+
+  var tip = {
+    choice:'نوارها کمکت میکنن جواب درست رو پیدا کنی.',
+    paint:'روی خانه‌ها کلیک کن تا رنگ بشن.',
+    word:'مسئله رو با دقت بخون.',
+    input:'فقط کافیه صورت کسر رو پیدا کنی.'
+  }[q.kind];
+  say('سؤال '+fa(st.i+1)+': '+tip, 'happy');
+
+  document.getElementById('hintBtn').onclick=function(){ var b=document.getElementById('hintBox'); b.hidden=!b.hidden; };
+  document.getElementById('next').onclick=next;
+  
+  if(q.kind==='input'){
+    var inp=document.getElementById('inp');
+    document.getElementById('chk').onclick=onInput;
+    inp.addEventListener('keydown',function(e){ if(e.key==='Enter') onInput(); });
+    inp.focus();
+  } else if(q.kind==='paint'){
+    document.getElementById('chk').onclick=onPaint;
+    Array.prototype.forEach.call(document.querySelectorAll('.cell'),function(c){
+      c.onclick=function(){
+        if(st.answered) return;
+        var on=!c.classList.contains('on');
+        c.classList.toggle('on',on);
+        var n=document.querySelectorAll('.cell.on').length;
+        document.getElementById('live').textContent='تا الان '+fa(n)+' خانه را رنگ کرده‌ای.';
+      };
+    });
+  } else {
+    Array.prototype.forEach.call(document.querySelectorAll('.opt'),function(btn){
+      btn.onclick=function(){ onChoice(+btn.getAttribute('data-k')); };
+    });
+  }
+}
+
+// بررسی جواب‌ها
+function retryUI(){
+  document.getElementById('hintBox').hidden=false;
+  say('نزدیک بودی'+nameTag()+'! راهنما رو بخون و دوباره امتحان کن.','sad');
+  sfx('retry'); shake(); updateStats();
+}
+
+function finish(ok){
+  var q=st.q, retried=st.tries>0, pts=0;
+  if(ok){
+    st.right++;
+    if(!retried){ st.firstTry++; st.streak++; if(st.streak>st.best) st.best=st.streak; pts=10+(st.streak>=3?5:0); }
+    else pts=5;
+  } else { st.streak=0; }
+  st.score+=pts;
+  st.results[st.i]= ok ? (retried?'half':'ok') : 'miss';
+  st.answered=true;
+  refreshPath(); updateStats();
+  
+  var fb=document.getElementById('fbBox');
+  fb.innerHTML= ok
+    ? '<div class="fb ok"><b>🎉 +'+fa(pts)+' امتیاز'+((!retried&&st.streak>=3)?' (با جایزه پیاپی 🔥)':'')+'</b><span class="why">'+explain(q)+'</span></div>'
+    : '<div class="fb no"><b>❌ اشکالی نداره، جواب درست رو با هم ببینیم:</b><span class="why">'+explain(q)+'</span></div>';
+  
+  say(ok ? pick(['آفرین','عالی بود','ستاره شدی'])+nameTag()+'!' : 'مهم یادگرفتنه'+nameTag()+'. بریم سؤال بعد!', ok?'cheer':'sad');
+  if(ok){ sfx('good'); burst(); if(!retried && st.streak>=3) document.querySelector('.card').style.boxShadow = '0 0 30px rgba(245, 158, 11, 0.6)'; } else sfx('bad');
+  
+  var nx=document.getElementById('next'); nx.hidden=false; nx.focus();
+  document.getElementById('hintBtn').hidden=true;
+  var chk=document.getElementById('chk'); if(chk) chk.disabled=true;
+}
+
+function onChoice(k){
+  if(st.answered) return;
+  var q=st.q, o=q.opts[k];
+  var btns=document.querySelectorAll('.opt'), btn=btns[k];
+  var ok=(o.num===q.ans.num && o.den===q.ans.den);
+  function lock(){
+    Array.prototype.forEach.call(btns,function(b,idx){
+      b.disabled=true;
+      var oo=q.opts[idx];
+      if(oo.num===q.ans.num && oo.den===q.ans.den) b.classList.add('right');
+    });
+  }
+  if(ok){ lock(); finish(true); }
+  else if(st.tries===0){ st.tries=1; st.streak=0; btn.classList.add('wrong'); btn.disabled=true; retryUI(); }
+  else { btn.classList.add('wrong'); lock(); finish(false); }
+}
+
+function onInput(){
+  if(st.answered) return;
+  var inp=document.getElementById('inp');
+  var v=parseInt(en(inp.value),10);
+  if(isNaN(v)){ inp.focus(); return; }
+  var ok=(v===st.q.ans.num);
+  if(ok){ inp.disabled=true; inp.style.borderColor='var(--good)'; finish(true); }
+  else if(st.tries===0){ st.tries=1; st.streak=0; inp.style.borderColor='var(--bad)'; inp.select(); retryUI(); }
+  else { inp.value=fa(st.q.ans.num); inp.disabled=true; inp.style.borderColor='var(--bad)'; finish(false); }
+}
+
+function onPaint(){
+  if(st.answered) return;
+  var q=st.q, allOk=true;
+  var barEls=document.querySelectorAll('.bar');
+  Array.prototype.forEach.call(barEls,function(bar){
+    bar.classList.remove('badbar');
+    var cnt=bar.querySelectorAll('.cell.on').length;
+    if(cnt!==q.a){ allOk=false; bar.classList.add('badbar'); }
+  });
+  function lock(){ Array.prototype.forEach.call(document.querySelectorAll('.cell'),function(c){ c.disabled=true; }); }
+  if(allOk){
+    lock(); document.getElementById('live').textContent='روی هم '+fa(q.n*q.a)+' خانه رنگی شد!'; finish(true);
+  } else if(st.tries===0){
+    st.tries=1; st.streak=0; retryUI();
+    document.getElementById('live').textContent='دقت کن: در هر نوار باید '+fa(q.a)+' خانه رنگی باشد.';
+  } else {
+    Array.prototype.forEach.call(barEls,function(bar){
+      bar.classList.remove('badbar');
+      Array.prototype.forEach.call(bar.querySelectorAll('.cell'),function(c,idx){
+        var on=idx<q.a; c.classList.toggle('on',on);
+      });
+    });
+    lock(); document.getElementById('live').textContent='روی هم '+fa(q.n*q.a)+' خانه رنگی شد.'; finish(false);
+  }
+}
+
+function next(){
+  st.i++; st.tries=0; st.answered=false;
+  if(st.i>=TOTAL){ end(); return; }
+  st.q=makeQ(st.i); render();
+}
+
+function end(){
+  document.body.setAttribute('data-chapter', '0');
+  var r=st.right, stars= (r>=9?3:(r>=6?2:1));
+  var title= stars===3 ? '👑 استاد کسرها' : (stars===2 ? '🌟 کسرشناس ماهر' : '🌱 کسرکار تازه‌کار');
+  var s=''; for(var i=0;i<3;i++) s+= i<stars ? '★' : '☆';
+  var oldBest=parseInt(store('ks-best')||'0',10), newRecord=st.score>oldBest;
+  if(newRecord) store('ks-best',String(st.score));
+  var badges=[];
+  if(st.firstTry===TOTAL) badges.push('بدون هیچ اشتباه 🎯');
+  if(st.best>=3) badges.push('🔥 '+fa(st.best)+' جواب پشت‌سرهم');
+  if(newRecord) badges.push('🏆 رکورد جدید!');
+  
+  app.innerHTML=
+    pathHtml()+
+    '<div class="card" style="margin-top:15px; border-color:var(--c1)">'+
+      '<div class="big"><div class="mas" id="mas">'+mascot('cheer')+'</div></div>'+
+      '<div class="stars">'+s+'</div>'+
+      '<h1>'+title+(userName?'، '+esc(userName):'')+'</h1>'+
+      '<p style="text-align:center; font-size:1.3rem;">امتیاز نهایی تو: <b style="color:var(--c1)">'+fa(st.score)+'</b></p>'+
+      '<p style="text-align:center; color:var(--muted)">'+fa(r)+' جواب درست از '+fa(TOTAL)+' سؤال</p>'+
+      (badges.length?'<div class="badges">'+badges.map(function(b){ return '<span class="badge">'+b+'</span>'; }).join('')+'</div>':'')+
+      '<div class="row"><button class="btn" id="again">🔄 یک دور دیگر</button></div>'+
+    '</div>';
+  setMascot('cheer'); sfx('win'); burst(); burst();
+  document.getElementById('again').onclick=function(){ startGame(); };
+}
+
+// تنظیمات صدا
+document.getElementById('snd').onclick=function(){
+  soundOn=!soundOn;
+  this.innerHTML='صدا: '+(soundOn?'روشن 🔊':'خاموش 🔇');
+};
+intro();
+</script>
+
+</body>
+</html>
